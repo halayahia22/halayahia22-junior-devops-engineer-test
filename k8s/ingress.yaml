@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-boot-ingress  # Updated ingress name
+spec:
+  rules:
+    - host: springboot.example.com  # Change to your actual domain
+      http:
+        paths:
+          - path: /live
+            pathType: Prefix
+            backend:
+              service:
+                name: spring-boot-service  # Must match service.yaml
+                port:
+                  number: 80
