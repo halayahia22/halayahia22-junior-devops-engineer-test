@@ -1,0 +1,90 @@
+trigger:
+  - dev  # Runs on commits to 'dev' branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerRegistryServiceConnection: 'DockerHubConnection'
+  imageName: 'halayahia22/springboot-app'
+
+stages:
+  - stage: Lint
+    jobs:
+      - job: LintCode
+        steps:
+          - script: ./gradlew check
+            displayName: 'Run Linting'
+
+  - stage: Unit_Test
+    jobs:
+      - job: RunTests
+        steps:
+          - script: ./gradlew test
+            displayName: 'Run Unit Tests'
+
+  - stage: SonarQube
+    jobs:
+      - job: SonarQubeAnalysis
+        steps:
+          - task: SonarQubePrepare@5
+            inputs:
+              SonarQube: 'SonarQube Service Connection'
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: 'springboot-app'
+          - script: ./gradlew sonarqube
+            displayName: 'Run SonarQube Analysis'
+
+  - stage: Build_Image
+    jobs:
+      - job: BuildDockerImage
+        steps:
+          - script: docker build -t $(imageName):$(Build.BuildId) .
+            displayName: 'Build Docker Image'
+
+  - stage: Push_Image
+    jobs:
+      - job: PushToRegistry
+        steps:
+          - script: |
+              docker tag $(imageName):$(Build.BuildId) $(imageName):latest
+              echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+              docker push $(imageName):$(Build.BuildId)
+              docker push $(imageName):latest
+            displayName: 'Push Image to Docker Hub'
+
+  - stage: Pull_Image
+    jobs:
+      - job: PullFromRegistry
+        steps:
+          - script: docker pull $(imageName):latest
+            displayName: 'Pull Image from Docker Hub'
+
+  - stage: Deploy_K8s
+    jobs:
+      - job: DeployToK8s
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment.yaml
+              kubectl apply -f k8s/service.yaml
+              kubectl apply -f k8s/ingress.yaml
+            displayName: 'Deploy to Kubernetes'
+
+  - stage: Deploy_Dev
+    jobs:
+      - job: DeployToDev
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment-dev.yaml
+              kubectl apply -f k8s/service-dev.yaml
+            displayName: 'Deploy to Dev Environment'
+
+  - stage: Deploy_Prod
+    jobs:
+      - job: DeployToProd
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment-prod.yaml
+              kubectl apply -f k8s/service-prod.yaml
+            displayName: 'Deploy to Production Environment'

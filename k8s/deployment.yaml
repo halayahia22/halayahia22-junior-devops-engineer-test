@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: spring-boot-app
-          image:halayahia22/spring-boot-app:latest
+          image: halayahia22/junior-devops-engineer-test:latest  # ✅ Corrected image name
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
