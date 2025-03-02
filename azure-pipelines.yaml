@@ -62,7 +62,7 @@ stages:
             displayName: 'Pull Image from Docker Hub'
 
   - stage: Deploy_K8s
-    jobs:
+    jobs:  
       - job: DeployToK8s
         steps:
           - script: |
