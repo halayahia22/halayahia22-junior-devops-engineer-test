@@ -1,107 +1,10 @@
-# trigger:
-#   - dev  # Runs on commits to 'dev' branch
+concurrency:
+  name: my_pipeline_lock  # Ensures only one pipeline runs at a time
+  cancelInProgress: false  # New runs wait instead of canceling in-progress runs
 
-# pool:
-#   vmImage: 'ubuntu-latest'
-
-# variables:
-#   dockerRegistryServiceConnection: 'DockerHubConnection'
-#   imageName: 'halayahia22/springboot-app'
-
-# stages:
-#   - stage: Lint
-#     jobs:
-#       - job: LintCode
-#         steps:
-#           - script: ./gradlew check
-#             displayName: 'Run Linting'
-
-#   - stage: Unit_Test
-#     dependsOn: Lint  # Run this stage only after Lint completes
-#     jobs:
-#       - job: RunTests
-#         steps:
-#           - script: ./gradlew test
-#             displayName: 'Run Unit Tests'
-
-#   - stage: Build_Image
-#     dependsOn: Unit_Test  # Run this stage only after Unit_Test completes
-#     jobs:
-#       - job: BuildDockerImage
-#         steps:
-#           - script: docker build -t $(imageName):$(Build.BuildId) .
-#             displayName: 'Build Docker Image'
-
-#   - stage: Push_Image
-#     dependsOn: Build_Image  # Run this stage only after Build_Image completes
-#     jobs:
-#       - job: PushToRegistry
-#         steps:
-#           - script: |
-#               docker tag $(imageName):$(Build.BuildId) $(imageName):latest
-#               echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
-#               docker push $(imageName):$(Build.BuildId)
-#               docker push $(imageName):latest
-#             displayName: 'Push Image to Docker Hub'
-
-#   - stage: Pull_Image
-#     dependsOn: Push_Image  # Run this stage only after Push_Image completes
-#     jobs:
-#       - job: PullFromRegistry
-#         steps:
-#           - script: docker pull $(imageName):latest
-#             displayName: 'Pull Image from Docker Hub'
-
-#   - stage: Deploy_K8s
-#     dependsOn: Pull_Image  # Run this stage only after Pull_Image completes
-#     jobs:  
-#       - job: DeployToK8s
-#         steps:
-#           - script: |
-#               kubectl apply -f k8s/deployment.yaml
-#               kubectl apply -f k8s/service.yaml
-#               kubectl apply -f k8s/ingress.yaml
-#             displayName: 'Deploy to Kubernetes'
-
-#   - stage: Deploy_Dev
-#     dependsOn: Deploy_K8s  # Run this stage only after Deploy_K8s completes
-#     jobs:
-#       - job: DeployToDev
-#         steps:
-#           - script: |
-#               kubectl apply -f k8s/deployment-dev.yaml
-#               kubectl apply -f k8s/service-dev.yaml
-#             displayName: 'Deploy to Dev Environment'
-
-#   - stage: Deploy_Prod
-#     dependsOn: Deploy_Dev  # Run this stage only after Deploy_Dev completes
-#     jobs:
-#       - job: DeployToProd
-#         steps:
-#           - script: |
-#               kubectl apply -f k8s/deployment-prod.yaml
-#               kubectl apply -f k8s/service-prod.yaml
-#             displayName: 'Deploy to Production Environment'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
 trigger:
-  - dev
+  - dev  # Runs on commits to 'dev' branch
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -110,30 +13,77 @@ variables:
   dockerRegistryServiceConnection: 'DockerHubConnection'
   imageName: 'halayahia22/springboot-app'
 
-jobs:
-  - job: Build_Test_Deploy
-    steps:
-      - script: ./gradlew check
-        displayName: 'Run Linting'
+stages:
+  - stage: Lint
+    jobs:
+      - job: LintCode
+        steps:
+          - script: ./gradlew check
+            displayName: 'Run Linting'
 
-      - script: ./gradlew test
-        displayName: 'Run Unit Tests'
+  - stage: Unit_Test
+    dependsOn: Lint  # Run this stage only after Lint completes
+    jobs:
+      - job: RunTests
+        steps:
+          - script: ./gradlew test
+            displayName: 'Run Unit Tests'
 
-      - script: docker build -t $(imageName):$(Build.BuildId) .
-        displayName: 'Build Docker Image'
+  - stage: Build_Image
+    dependsOn: Unit_Test  # Run this stage only after Unit_Test completes
+    jobs:
+      - job: BuildDockerImage
+        steps:
+          - script: docker build -t $(imageName):$(Build.BuildId) .
+            displayName: 'Build Docker Image'
 
-      - script: |
-          docker tag $(imageName):$(Build.BuildId) $(imageName):latest
-          echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
-          docker push $(imageName):$(Build.BuildId)
-          docker push $(imageName):latest
-        displayName: 'Push Image to Docker Hub'
+  - stage: Push_Image
+    dependsOn: Build_Image  # Run this stage only after Build_Image completes
+    jobs:
+      - job: PushToRegistry
+        steps:
+          - script: |
+              docker tag $(imageName):$(Build.BuildId) $(imageName):latest
+              echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+              docker push $(imageName):$(Build.BuildId)
+              docker push $(imageName):latest
+            displayName: 'Push Image to Docker Hub'
 
-      - script: docker pull $(imageName):latest
-        displayName: 'Pull Image from Docker Hub'
+  - stage: Pull_Image
+    dependsOn: Push_Image  # Run this stage only after Push_Image completes
+    jobs:
+      - job: PullFromRegistry
+        steps:
+          - script: docker pull $(imageName):latest
+            displayName: 'Pull Image from Docker Hub'
 
-      - script: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
-        displayName: 'Deploy to Kubernetes'
+  - stage: Deploy_K8s
+    dependsOn: Pull_Image  # Run this stage only after Pull_Image completes
+    jobs:  
+      - job: DeployToK8s
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment.yaml
+              kubectl apply -f k8s/service.yaml
+              kubectl apply -f k8s/ingress.yaml
+            displayName: 'Deploy to Kubernetes'
+
+  - stage: Deploy_Dev
+    dependsOn: Deploy_K8s  # Run this stage only after Deploy_K8s completes
+    jobs:
+      - job: DeployToDev
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment-dev.yaml
+              kubectl apply -f k8s/service-dev.yaml
+            displayName: 'Deploy to Dev Environment'
+
+  - stage: Deploy_Prod
+    dependsOn: Deploy_Dev  # Run this stage only after Deploy_Dev completes
+    jobs:
+      - job: DeployToProd
+        steps:
+          - script: |
+              kubectl apply -f k8s/deployment-prod.yaml
+              kubectl apply -f k8s/service-prod.yaml
+            displayName: 'Deploy to Production Environment'
