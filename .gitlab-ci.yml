@@ -1,0 +1,97 @@
+image: ubuntu:latest
+
+variables:
+  DOCKER_IMAGE: "halayahia22/springboot-app"
+  DOCKER_TAG: "$DOCKER_IMAGE:$CI_COMMIT_SHA"
+  DOCKER_LATEST: "$DOCKER_IMAGE:latest"
+
+stages:
+  - lint
+  - test
+  - sonarqube
+  - build
+  - push
+  - pull
+  - deploy_k8s
+  - deploy_dev
+  - deploy_prod
+
+before_script:
+  - apt-get update && apt-get install -y curl unzip docker.io
+  - chmod +x gradlew
+
+lint:
+  stage: lint
+  script:
+    - ./gradlew check
+  only:
+    - dev
+
+unit_test:
+  stage: test
+  script:
+    - ./gradlew test
+  only:
+    - dev
+
+sonarqube:
+  stage: sonarqube
+  variables:
+    SONAR_HOST_URL: "your_sonar_url"
+    SONAR_LOGIN: "your_sonar_token"
+  script:
+    - curl -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+    - unzip sonar-scanner-cli.zip
+    - export PATH=$PATH:$(pwd)/sonar-scanner-4.6.2.2472-linux/bin
+    - ./gradlew sonarqube
+  only:
+    - dev
+
+build_image:
+  stage: build
+  script:
+    - docker build -t $DOCKER_TAG .
+  only:
+    - dev
+
+push_image:
+  stage: push
+  script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker tag $DOCKER_TAG $DOCKER_LATEST
+    - docker push $DOCKER_TAG
+    - docker push $DOCKER_LATEST
+  only:
+    - dev
+
+pull_image:
+  stage: pull
+  script:
+    - docker pull $DOCKER_LATEST
+  only:
+    - dev
+
+deploy_k8s:
+  stage: deploy_k8s
+  script:
+    - kubectl apply -f k8s/deployment.yaml
+    - kubectl apply -f k8s/service.yaml
+    - kubectl apply -f k8s/ingress.yaml
+  only:
+    - dev
+
+deploy_dev:
+  stage: deploy_dev
+  script:
+    - kubectl apply -f k8s/deployment-dev.yaml
+    - kubectl apply -f k8s/service-dev.yaml
+  only:
+    - dev
+
+deploy_prod:
+  stage: deploy_prod
+  script:
+    - kubectl apply -f k8s/deployment-prod.yaml
+    - kubectl apply -f k8s/service-prod.yaml
+  only:
+    - main
