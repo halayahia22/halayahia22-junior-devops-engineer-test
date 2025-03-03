@@ -17,26 +17,15 @@ stages:
             displayName: 'Run Linting'
 
   - stage: Unit_Test
+    dependsOn: Lint  # Run this stage only after Lint completes
     jobs:
       - job: RunTests
         steps:
           - script: ./gradlew test
             displayName: 'Run Unit Tests'
 
-  # - stage: SonarQube
-  #   jobs:
-  #     - job: SonarQubeAnalysis
-  #       steps:
-  #         - task: SonarQubePrepare@5
-  #           inputs:
-  #             SonarQube: 'SonarQube Service Connection'
-  #             scannerMode: 'CLI'
-  #             configMode: 'manual'
-  #             cliProjectKey: 'springboot-app'
-  #         - script: ./gradlew sonarqube
-  #           displayName: 'Run SonarQube Analysis'
-
   - stage: Build_Image
+    dependsOn: Unit_Test  # Run this stage only after Unit_Test completes
     jobs:
       - job: BuildDockerImage
         steps:
@@ -44,6 +33,7 @@ stages:
             displayName: 'Build Docker Image'
 
   - stage: Push_Image
+    dependsOn: Build_Image  # Run this stage only after Build_Image completes
     jobs:
       - job: PushToRegistry
         steps:
@@ -55,6 +45,7 @@ stages:
             displayName: 'Push Image to Docker Hub'
 
   - stage: Pull_Image
+    dependsOn: Push_Image  # Run this stage only after Push_Image completes
     jobs:
       - job: PullFromRegistry
         steps:
@@ -62,6 +53,7 @@ stages:
             displayName: 'Pull Image from Docker Hub'
 
   - stage: Deploy_K8s
+    dependsOn: Pull_Image  # Run this stage only after Pull_Image completes
     jobs:  
       - job: DeployToK8s
         steps:
@@ -72,6 +64,7 @@ stages:
             displayName: 'Deploy to Kubernetes'
 
   - stage: Deploy_Dev
+    dependsOn: Deploy_K8s  # Run this stage only after Deploy_K8s completes
     jobs:
       - job: DeployToDev
         steps:
@@ -81,6 +74,7 @@ stages:
             displayName: 'Deploy to Dev Environment'
 
   - stage: Deploy_Prod
+    dependsOn: Deploy_Dev  # Run this stage only after Deploy_Dev completes
     jobs:
       - job: DeployToProd
         steps:
