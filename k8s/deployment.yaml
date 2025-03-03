@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: spring-boot-app
-          image: halayahia22/junior-devops-engineer-test:latest  # ✅ Corrected image name
+          image: halayahia22/junior-devops-engineer-test:latest  # Ensure this image exists in your Docker registry
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

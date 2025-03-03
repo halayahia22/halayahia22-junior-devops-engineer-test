@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: spring-boot-service  # Updated service name
+  name: spring-boot-service  # Service name
 spec:
   selector:
     app: spring-boot-app  # Must match labels in deployment.yaml
@@ -9,4 +9,4 @@ spec:
     - protocol: TCP
       port: 80  # Exposes service on port 80
       targetPort: 8080  # Forwards traffic to app running on port 8080 in the container
-  type: LoadBalancer  # Change to NodePort if running locally
+  type: LoadBalancer  # Use NodePort if running locally or on a non-cloud environment

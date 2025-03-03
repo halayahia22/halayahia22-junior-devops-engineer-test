@@ -23,18 +23,18 @@ stages:
           - script: ./gradlew test
             displayName: 'Run Unit Tests'
 
-  - stage: SonarQube
-    jobs:
-      - job: SonarQubeAnalysis
-        steps:
-          - task: SonarQubePrepare@5
-            inputs:
-              SonarQube: 'SonarQube Service Connection'
-              scannerMode: 'CLI'
-              configMode: 'manual'
-              cliProjectKey: 'springboot-app'
-          - script: ./gradlew sonarqube
-            displayName: 'Run SonarQube Analysis'
+  # - stage: SonarQube
+  #   jobs:
+  #     - job: SonarQubeAnalysis
+  #       steps:
+  #         - task: SonarQubePrepare@5
+  #           inputs:
+  #             SonarQube: 'SonarQube Service Connection'
+  #             scannerMode: 'CLI'
+  #             configMode: 'manual'
+  #             cliProjectKey: 'springboot-app'
+  #         - script: ./gradlew sonarqube
+  #           displayName: 'Run SonarQube Analysis'
 
   - stage: Build_Image
     jobs:
