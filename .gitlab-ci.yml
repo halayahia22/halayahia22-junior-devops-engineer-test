@@ -8,7 +8,7 @@ variables:
 stages:
   - lint
   - test
-  - sonarqube
+  # - sonarqube
   - build
   - push
   - pull
@@ -34,18 +34,18 @@ unit_test:
   only:
     - dev
 
-sonarqube:
-  stage: sonarqube
-  variables:
-    SONAR_HOST_URL: "your_sonar_url"
-    SONAR_LOGIN: "your_sonar_token"
-  script:
-    - curl -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
-    - unzip sonar-scanner-cli.zip
-    - export PATH=$PATH:$(pwd)/sonar-scanner-4.6.2.2472-linux/bin
-    - ./gradlew sonarqube
-  only:
-    - dev
+# sonarqube:
+#   stage: sonarqube
+#   variables:
+#     SONAR_HOST_URL: "your_sonar_url"
+#     SONAR_LOGIN: "your_sonar_token"
+#   script:
+#     - curl -o sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip
+#     - unzip sonar-scanner-cli.zip
+#     - export PATH=$PATH:$(pwd)/sonar-scanner-4.6.2.2472-linux/bin
+#     - ./gradlew sonarqube
+#   only:
+#     - dev
 
 build_image:
   stage: build
